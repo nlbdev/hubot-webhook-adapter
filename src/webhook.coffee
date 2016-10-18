@@ -23,7 +23,7 @@ class Webhook extends Adapter
           else
             @robot.logger.debug "Message successfully sent to master"
     else
-      @robot.logger.warn "HUBOT_MASTER_URL is not defined: try: export HUBOT_MASTER_URL='http://example.net:80/hubot/message'"
+      @robot.logger.warning "HUBOT_MASTER_URL is not defined: try: export HUBOT_MASTER_URL='http://example.net:80/hubot/message'"
       console.log "data:", data
   
   constructor: ->
