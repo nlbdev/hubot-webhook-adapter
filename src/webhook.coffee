@@ -2,53 +2,49 @@
 
 class Webhook extends Adapter
   
-#  callback: (type, envelope, strings...) ->
-#    data = JSON.stringify({
-#      type: type,
-#      envelope: envelope,
-#      strings: strings
-#    })
-#    console.log data
-#    robot.http(process.env.HUBOT_MASTER_URL)
-#      .header('Content-Type', 'application/json')
-#      .post(data) (err, res, body) ->
-#        if err
-#          @robot.logger.error "Encountered an error while sending message to master: #{err}"
-#          return
-#        
-#        else if res.statusCode isnt 200
-#          @robot.logger.error "Message sent to master didn't come back with a HTTP 200"
-#          return
-#        
-#        else
-#          @robot.logger.debug "Message successfully sent to master"
+  callback: (type, envelope, strings...) ->
+    data = JSON.stringify({
+      type: type,
+      envelope: envelope,
+      strings: strings
+    })
+    if process.env.HUBOT_MASTER_URL
+      robot.http(process.env.HUBOT_MASTER_URL)
+        .header('Content-Type', 'application/json')
+        .post(data) (err, res, body) ->
+          if err
+            @robot.logger.error "Encountered an error while sending message to master: {err}"
+            return
+          
+          else if res.statusCode isnt 200
+            @robot.logger.error "Message sent to master didn't come back with a HTTP 200"
+            return
+          
+          else
+            @robot.logger.debug "Message successfully sent to master"
+    else
+      @robot.logger.warn "HUBOT_MASTER_URL is not defined: try: export HUBOT_MASTER_URL='http://example.net:80/hubot/message'"
+      console.log "data:", data
   
-#  constructor: ->
-#    super
-#    @robot.logger.info "Constructor"
-#  
-#  send: (envelope, strings...) ->
-#    @robot.logger.info "Send"
-#    @callback "send", envelope, strings
-#  
-#  reply: (envelope, strings...) ->
-#    @robot.logger.info "Reply"
-#    @callback "reply", envelope, strings
-#  
-#  checkCanStart: ->
-#    if not process.env.HUBOT_MASTER_URL
-#      throw new Error("HUBOT_MASTER_URL is not defined: try: export HUBOT_MASTER_URL='http://example.net:80/hubot/message'")
-#  
-
+  constructor: ->
+    super
+    @robot.logger.info "Constructor"
+  
   send: (envelope, strings...) ->
-    console.log chalk.bold("#{str}") for str in strings
-  
-  emote: (envelope, strings...) ->
-    @send envelope, "* #{str}" for str in strings
+    @robot.logger.info "Send"
+    @callback "send", envelope, strings
   
   reply: (envelope, strings...) ->
-    strings = strings.map (s) -> "#{envelope.user.name}: #{s}"
-    @send envelope, strings...
+    @robot.logger.info "Reply"
+    @callback "reply", envelope, strings
+
+  emote: (envelope, strings...) ->
+    @robot.logger.info "Emote"
+    @callback "emote", envelope, strings
+  
+  checkCanStart: ->
+    if not process.env.HUBOT_MASTER_URL
+      throw new Error("HUBOT_MASTER_URL is not defined: try: export HUBOT_MASTER_URL='http://example.net:80/hubot/message'")
   
   run: ->
     @robot.logger.info "Run"
@@ -93,7 +89,6 @@ class Webhook extends Adapter
       
       @robot.logger.info "Handling received message"
       
-      console.log message
       @robot.receive(message, (robot) ->
         console.log "Received message handled"
       )
