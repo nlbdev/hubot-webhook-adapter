@@ -60,7 +60,6 @@ class Webhook extends Adapter
     @robot.name = options.name
     
     @robot.router.post '/hubot/message', (req, res) =>
-      res.send 'OK'
       
       @robot.logger.info "Received Request"
       
@@ -76,6 +75,8 @@ class Webhook extends Adapter
         res.json {status: 'failed', error: "request data missing"}
         console.log "Error: request data missing"
         return
+      
+      res.json {status: 'ok'}
       
       user = @userForId message.user.id, name: message.user.name, room: message.user.room
       
