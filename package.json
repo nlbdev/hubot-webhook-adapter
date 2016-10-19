@@ -2,10 +2,14 @@
   "name": "hubot-webhook-adapter",
   "version": "1.0.0",
   "description": "Adapter to allow one HuBot to forward requests to another HuBot.",
+  "author": "Jostein Austvik Jacobsen",
+  "license": "MIT",
+  
   "main": "src/webhook.coffee",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  
   "keywords": [
     "hubot",
     "adapter",
@@ -15,8 +19,7 @@
     "relay",
     "node"
   ],
-  "author": "Jostein Austvik Jacobsen",
-  "license": "ISC",
+  
   "dependencies": {
   },
   "peerDependencies": {

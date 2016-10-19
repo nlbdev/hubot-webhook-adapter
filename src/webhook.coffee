@@ -1,3 +1,22 @@
+# Description:
+#   Webhook adapter for handling messages arriving from other HuBot instances.
+#
+# Dependencies:
+#   None
+#
+# Configuration:
+#   HUBOT_MASTER_URL - the webhook URL to the master HuBot
+#
+# Notes:
+#   This adapter sets up a webhook to receive messages from another "master" HuBot instance,
+#   and sends the responses back to that HuBot instance.
+#
+#   The environment variable HUBOT_MASTER_URL must be set to the webhook URL for this the "master" HuBot instance.
+#   The webhook URL for the main instance is also on the form `http://<ip>:8080/hubot/message`.
+#
+# Author:
+#   josteinaj
+
 {Adapter, Message, TextMessage, EnterMessage, LeaveMessage, TopicMessage, CatchAllMessage} = require 'hubot'
 
 class Webhook extends Adapter
@@ -5,23 +24,27 @@ class Webhook extends Adapter
   callback: (type, envelope, strings...) ->
     data = JSON.stringify({
       type: type,
+      name: @robot.name,
       envelope: envelope,
       strings: strings
     })
     if process.env.HUBOT_MASTER_URL
-      robot.http(process.env.HUBOT_MASTER_URL)
+      @robot.http(process.env.HUBOT_MASTER_URL)
         .header('Content-Type', 'application/json')
         .post(data) (err, res, body) ->
           if err
-            @robot.logger.error "Encountered an error while sending message to master: {err}"
+            # error
+            console.log "Encountered an error while sending message to master: "+err
             return
           
           else if res.statusCode isnt 200
-            @robot.logger.error "Message sent to master didn't come back with a HTTP 200"
+            # error
+            console.log "Message sent to master didn't come back with a HTTP 200"
             return
           
-          else
-            @robot.logger.debug "Message successfully sent to master"
+          #else
+          #  # success
+          #  console.log "Message successfully sent to master"
     else
       @robot.logger.warning "HUBOT_MASTER_URL is not defined: try: export HUBOT_MASTER_URL='http://example.net:80/hubot/message'"
       console.log "data:", data
@@ -48,24 +71,16 @@ class Webhook extends Adapter
   
   run: ->
     @robot.logger.info "Run"
-    #do @checkCanStart
-    
-    options =
-      name:     process.env.HUBOT_SLAVE_NAME or @robot.name
-      port:     process.env.HUBOT_MASTER_PORT or 3000
-      server:   process.env.HUBOT_MASTER_URL
-      token:    process.env.HUBOT_MASTER_TOKEN or ''
-      debug:    process.env.HUBOT_MASTER_DEBUG?
-    
-    @robot.name = options.name
+    do @checkCanStart
     
     @robot.router.post '/hubot/message', (req, res) =>
+      res.send 'OK'
       
-      @robot.logger.info "Received Request"
+      @robot.logger.debug "Received Request"
       
       if !req.is 'json'
         res.json {status: 'failed', error: "request isn't json"}
-        console.log "Error: request isn't json"
+        @robot.logger.debug "Error: request isn't json"
         return
       
       type = req.body.type
@@ -73,12 +88,10 @@ class Webhook extends Adapter
       
       if !type || !message
         res.json {status: 'failed', error: "request data missing"}
-        console.log "Error: request data missing"
+        @robot.logger.debug "Error: request data missing"
         return
       
-      res.json {status: 'ok'}
-      
-      user = @userForId message.user.id, name: message.user.name, room: message.user.room
+      user = @robot.brain.userForId message.user.id, name: message.user.name, room: message.user.room
       
       switch type
         when "Message" then message = new Message(user, message.done)
@@ -88,10 +101,10 @@ class Webhook extends Adapter
         when "TopicMessage" then message = new TopicMessage(user, message.text, message.id)
         else message = new CatchAllMessage(message?.message or message)
       
-      @robot.logger.info "Handling received message"
+      @robot.logger.debug "Handling received message"
       
       @robot.receive(message, (robot) ->
-        console.log "Received message handled"
+        #console.log "Received message handled"
       )
     
     @emit "connected"
