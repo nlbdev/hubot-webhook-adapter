@@ -101,6 +101,9 @@ class Webhook extends Adapter
         when "TopicMessage" then message = new TopicMessage(user, message.text, message.id)
         else message = new CatchAllMessage(message?.message or message)
       
+      for propertyName, propertyValue of req.body.message
+        message[propertyName] = propertyValue
+      
       @robot.logger.debug "Handling received message"
       
       @robot.receive(message, (robot) ->
