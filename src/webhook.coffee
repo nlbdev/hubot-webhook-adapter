@@ -22,8 +22,16 @@
 class Webhook extends Adapter
   
   callback: (type, envelope, strings...) ->
+    messageType = switch
+      when envelope.message instanceof TextMessage then 'TextMessage'
+      when envelope.message instanceof EnterMessage then 'EnterMessage'
+      when envelope.message instanceof LeaveMessage then 'LeaveMessage'
+      when envelope.message instanceof TopicMessage then 'TopicMessage'
+      when envelope.message instanceof Message then 'Message'
+      else 'CatchAllMessage'
     data = JSON.stringify({
       type: type,
+      messageType: messageType
       name: @robot.name,
       envelope: envelope,
       strings: strings
@@ -55,15 +63,15 @@ class Webhook extends Adapter
   
   send: (envelope, strings...) ->
     @robot.logger.info "Send"
-    @callback "send", envelope, strings
+    @callback "send", envelope, strings...
   
   reply: (envelope, strings...) ->
     @robot.logger.info "Reply"
-    @callback "reply", envelope, strings
+    @callback "reply", envelope, strings...
 
   emote: (envelope, strings...) ->
     @robot.logger.info "Emote"
-    @callback "emote", envelope, strings
+    @callback "emote", envelope, strings...
   
   checkCanStart: ->
     if not process.env.HUBOT_MASTER_URL
@@ -83,17 +91,17 @@ class Webhook extends Adapter
         @robot.logger.debug "Error: request isn't json"
         return
       
-      type = req.body.type
+      messageType = req.body.messageType
       message = req.body.message
       
-      if !type || !message
+      if !messageType || !message
         res.json {status: 'failed', error: "request data missing"}
         @robot.logger.debug "Error: request data missing"
         return
       
       user = @robot.brain.userForId message.user.id, name: message.user.name, room: message.user.room
       
-      switch type
+      switch messageType
         when "Message" then message = new Message(user, message.done)
         when "TextMessage" then message = new TextMessage(user, message.text, message.id)
         when "EnterMessage" then message = new EnterMessage(user, message.text, message.id)
