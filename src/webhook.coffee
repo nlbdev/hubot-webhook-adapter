@@ -6,6 +6,8 @@
 #
 # Configuration:
 #   HUBOT_MASTER_URL - the webhook URL to the master HuBot
+#   WEBHOOK_ADAPTER_COMMAND_FORWARD - if set, will forward all requests to this command
+#   WEBHOOK_ADAPTER_COMMAND_WHITELIST - use in together with the *_FORWARD variable to exclude certain commands
 #
 # Notes:
 #   This adapter sets up a webhook to receive messages from another "master" HuBot instance,
@@ -13,6 +15,14 @@
 #
 #   The environment variable HUBOT_MASTER_URL must be set to the webhook URL for this the "master" HuBot instance.
 #   The webhook URL for the main instance is also on the form `http://<ip>:8080/hubot/message`.
+#
+#   All messages can optionally be forwarded to a specific command. The use-case here is for the hubot-script-shellcmd
+#   shell command script, where you may want to avoid having to type 'shellcmd' before all the commands. In this case,
+#   you can set the WEBHOOK_ADAPTER_COMMAND_WHITELIST environment variable to "adapter echo help ping time shellcmd",
+#   and the WEBHOOK_ADAPTER_COMMAND_FORWARD environment variable to "shellcmd". Edit WEBHOOK_ADAPTER_COMMAND_WHITELIST
+#   as appropriate if you have additional commands that you don't want automatically forwarded to hubot-script-shellcmd.
+#   If this hubot receives a message "x y z", and WEBHOOK_ADAPTER_COMMAND_FORWARD and WEBHOOK_ADAPTER_COMMAND_WHITELIST
+#   is set as previously described, then the message will be rewritten as "x shellcmd y z".
 #
 # Author:
 #   josteinaj
@@ -113,6 +123,10 @@ class Webhook extends Adapter
         message[propertyName] = propertyValue
       
       @robot.logger.debug "Handling received message"
+      
+      if process.env.WEBHOOK_ADAPTER_COMMAND_WHITELIST
+        if (message.text.replace /^[^\s]+\s+([^\s]+)(\s.*|$)/, "$1") not in process.env.WEBHOOK_ADAPTER_COMMAND_WHITELIST.split " "
+          message.text = message.text.replace /^([^\s]+)(\s.*|$)/, "$1 "+process.env.WEBHOOK_ADAPTER_COMMAND_FORWARD+"$2"
       
       @robot.receive(message, (robot) ->
         #console.log "Received message handled"
